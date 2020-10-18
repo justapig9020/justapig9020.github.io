@@ -64,44 +64,6 @@
       <div class="outer">
         <section id="main">
   
-    <article id="post-Linux-Pipe-小結" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-meta">
-    <a href="/2020/10/18/Linux-Pipe-%E5%B0%8F%E7%B5%90/" class="article-date">
-  <time datetime="2020-10-18T08:42:04.000Z" itemprop="datePublished">2020-10-18</time>
-</a>
-    
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2020/10/18/Linux-Pipe-%E5%B0%8F%E7%B5%90/">Linux Pipe 小結</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <h1 id="Pipe"><a href="#Pipe" class="headerlink" title="Pipe"></a>Pipe</h1><h2 id="緣起"><a href="#緣起" class="headerlink" title="緣起"></a>緣起</h2><p>有朋友再做關於 <code>pipe</code> 的實驗，原始碼如下:</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">()</span></span>&#123;</span><br><span class="line">    <span class="keyword">char</span> *arg1[] = &#123;<span class="string">&quot;ls&quot;</span>, <span class="literal">NULL</span>&#125;;</span><br><span class="line">    <span class="keyword">char</span> *arg2[] = &#123;<span class="string">&quot;cat&quot;</span>,<span class="string">&quot;-n&quot;</span>, <span class="literal">NULL</span>&#125;;</span><br><span class="line">    <span class="keyword">int</span> p[<span class="number">2</span>];</span><br><span class="line">    <span class="keyword">if</span>(pipe(p))</span><br><span class="line">        <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span>(<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; <span class="number">2</span>; i++)&#123;</span><br><span class="line">        <span class="keyword">pid_t</span> pid;</span><br><span class="line">        pid = fork();</span><br><span class="line">        <span class="keyword">if</span>(pid == <span class="number">0</span>)&#123;</span><br><span class="line">            <span class="keyword">if</span>(i == <span class="number">0</span>)&#123;</span><br><span class="line">                close(p[<span class="number">0</span>]);</span><br><span class="line">                dup2(p[<span class="number">1</span>], <span class="number">1</span>);</span><br><span class="line">                execvp(arg1[<span class="number">0</span>], arg1);</span><br><span class="line">                close(p[<span class="number">1</span>]);</span><br><span class="line">                <span class="built_in">exit</span>(<span class="number">0</span>);</span><br><span class="line">            &#125;<span class="keyword">else</span> <span class="keyword">if</span>(i == <span class="number">1</span>)&#123;</span><br><span class="line">                close(p[<span class="number">1</span>]);</span><br><span class="line">                dup2(p[<span class="number">0</span>], <span class="number">0</span>);</span><br><span class="line"></span><br><span class="line">                execvp(arg2[<span class="number">0</span>], arg2);</span><br><span class="line">                close(p[<span class="number">0</span>]);</span><br><span class="line">                <span class="built_in">exit</span>(<span class="number">0</span>);</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;<span class="keyword">else</span>&#123;</span><br><span class="line">            <span class="keyword">int</span> status;</span><br><span class="line">            waitpid(pid, &amp;status, <span class="number">0</span>);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="https://justapig9020.github.io/2020/10/18/Linux-Pipe-%E5%B0%8F%E7%B5%90/" data-id="ckgf7bqhk0000h1be0ht3e2t3" class="article-share-link">Share</a>
-      
-      
-    </footer>
-  </div>
-  
-</article>
-
-
-  
     <article id="post-hello-world" class="article article-type-post" itemscope itemprop="blogPost">
   <div class="article-meta">
     <a href="/2020/10/18/hello-world/" class="article-date">
@@ -141,7 +103,7 @@
       
     </div>
     <footer class="article-footer">
-      <a data-url="https://justapig9020.github.io/2020/10/18/hello-world/" data-id="ckgf7bqhp0001h1beghwv2unx" class="article-share-link">Share</a>
+      <a data-url="https://justapig9020.github.io/2020/10/18/hello-world/" data-id="ckgf7ge6s0000s2becowsgyql" class="article-share-link">Share</a>
       
       
     </footer>
@@ -180,10 +142,6 @@
     <h3 class="widget-title">最新文章</h3>
     <div class="widget">
       <ul>
-        
-          <li>
-            <a href="/2020/10/18/Linux-Pipe-%E5%B0%8F%E7%B5%90/">Linux Pipe 小結</a>
-          </li>
         
           <li>
             <a href="/2020/10/18/hello-world/">Hello World</a>
