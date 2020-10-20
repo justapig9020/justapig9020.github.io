@@ -132,7 +132,7 @@
 
 <p>預期的功能如下：</p>
 <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ ls | cat -n</span><br></pre></td></tr></table></figure>
-<p>預期輸出(該資料中有 <code>main.c</code> 與 <code>main</code> 兩個檔案的狀況下):</p>
+<p>預期輸出(該資料夾中有 <code>main.c</code> 與 <code>main</code> 兩個檔案的狀況下):</p>
 <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">$</span><br><span class="line">     1	main</span><br><span class="line">     2	main.c</span><br><span class="line">$</span><br></pre></td></tr></table></figure>
 
 <p>可是卻發生 <code>cat</code> 無法終止的問題 (輸出完預期的字串後，一直停留在 <code>cat</code> 中不會停止)。<br>實際輸出:</p>
