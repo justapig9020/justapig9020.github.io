@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+
+  
+  <title>linux pipe 筆記(二) | Justapig9020&#39;s blog</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="description" content="pipe 原理以下 pipe 原始碼來自 linux v5.4 ， bootlin 超連結。 開啟開啟新的 pipe 不是透過一般的 open ，而是使用獨立的 system call pipe 。該 system call 實作如下。 1234SYSCALL_DEFINE1(pipe, int __user *, fildes)&amp;#123;	return do_pipe2(fildes, 0);">
+<meta property="og:type" content="article">
+<meta property="og:title" content="linux pipe 筆記(二)">
+<meta property="og:url" content="https://justapig9020.github.io/2020/10/22/linux-pipe-2/index.html">
+<meta property="og:site_name" content="Justapig9020&#39;s blog">
+<meta property="og:description" content="pipe 原理以下 pipe 原始碼來自 linux v5.4 ， bootlin 超連結。 開啟開啟新的 pipe 不是透過一般的 open ，而是使用獨立的 system call pipe 。該 system call 實作如下。 1234SYSCALL_DEFINE1(pipe, int __user *, fildes)&amp;#123;	return do_pipe2(fildes, 0);">
+<meta property="og:locale" content="zh_TW">
+<meta property="article:published_time" content="2020-10-22T14:41:16.000Z">
+<meta property="article:modified_time" content="2020-10-22T14:47:43.166Z">
+<meta property="article:author" content="justapig9020">
+<meta property="article:tag" content="Linux">
+<meta name="twitter:card" content="summary">
+  
+    <link rel="alternate" href="/atom.xml" title="Justapig9020&#39;s blog" type="application/atom+xml">
+  
+  
+    <link rel="icon" href="/favicon.png">
+  
+  
+    <link href="//fonts.googleapis.com/css?family=Source+Code+Pro" rel="stylesheet" type="text/css">
+  
+  
+<link rel="stylesheet" href="/css/style.css">
+
+<meta name="generator" content="Hexo 5.2.0"></head>
+
+<body>
+  <div id="container">
+    <div id="wrap">
+      <header id="header">
+  <div id="banner"></div>
+  <div id="header-outer" class="outer">
+    <div id="header-title" class="inner">
+      <h1 id="logo-wrap">
+        <a href="/" id="logo">Justapig9020&#39;s blog</a>
+      </h1>
+      
+    </div>
+    <div id="header-inner" class="inner">
+      <nav id="main-nav">
+        <a id="main-nav-toggle" class="nav-icon"></a>
+        
+          <a class="main-nav-link" href="/">Home</a>
+        
+          <a class="main-nav-link" href="/archives">Archives</a>
+        
+      </nav>
+      <nav id="sub-nav">
+        
+          <a id="nav-rss-link" class="nav-icon" href="/atom.xml" title="RSS Feed"></a>
+        
+        <a id="nav-search-btn" class="nav-icon" title="搜尋"></a>
+      </nav>
+      <div id="search-form-wrap">
+        <form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form"><input type="search" name="q" class="search-form-input" placeholder="Search"><button type="submit" class="search-form-submit">&#xF002;</button><input type="hidden" name="sitesearch" value="https://justapig9020.github.io"></form>
+      </div>
+    </div>
+  </div>
+</header>
+      <div class="outer">
+        <section id="main"><article id="post-linux-pipe-2" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2020/10/22/linux-pipe-2/" class="article-date">
+  <time datetime="2020-10-22T14:41:16.000Z" itemprop="datePublished">2020-10-22</time>
+</a>
+    
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="article-title" itemprop="name">
+      linux pipe 筆記(二)
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h2 id="pipe-原理"><a href="#pipe-原理" class="headerlink" title="pipe 原理"></a>pipe 原理</h2><p>以下 <code>pipe</code> 原始碼來自 <code>linux v5.4</code> ， <a target="_blank" rel="noopener" href="https://elixir.bootlin.com/linux/v5.4/source/fs/pipe.c">bootlin</a> 超連結。</p>
+<h3 id="開啟"><a href="#開啟" class="headerlink" title="開啟"></a>開啟</h3><p>開啟新的 <code>pipe</code> 不是透過一般的 <code>open</code> ，而是使用獨立的 <strong>system call</strong> <code>pipe</code> 。該 <strong>system call</strong> 實作如下。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">SYSCALL_DEFINE1(pipe, <span class="keyword">int</span> __user *, fildes)</span><br><span class="line">&#123;</span><br><span class="line">	<span class="keyword">return</span> do_pipe2(fildes, <span class="number">0</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>該 <strong>system call</strong> 的主要實作為函數 <code>do_pipe2()</code> 。在該函數中會</p>
+<ol>
+<li>建立新的 <code>pipe</code> 物件。</li>
+<li>獲取兩個 <code>file descriptor</code> 並將其回傳至 <code>user space</code> 。</li>
+<li>將兩個 <code>file descriptor</code> 指向對應的 <code>file description</code> 。<br>透過上述步驟就可以將原本作為參數傳入的陣列填上對應的兩個 <code>file descriptor</code> 了。</li>
+</ol>
+<p>在 <code>do_pip2e()</code> 中，透過 <code>__do_pipe_flags()</code> 呼叫 <code>create_pipe_files()</code> 建立新的 <code>pipe</code> 物件。<br>在 <code>create_pipe_files()</code> 中呼叫 <code>get_pipe_inode()</code> 。在 <code>get_pipe_inode()</code> 函數中，可以看到其創建一個 <code>struct pipe_inode_info</code> 的物件並透過 <code>inode</code> 物件的 <code>i_pipe</code> 成員指向他。<br>檢視 <code>struct pipe_inode_info</code> 內容，<a target="_blank" rel="noopener" href="https://elixir.bootlin.com/linux/v5.4/source/include/linux/pipe_fs_i.h#L48">原始碼</a>，以下節錄我們感興趣的部份：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">pipe_inode_info</span> &#123;</span></span><br><span class="line">    ...</span><br><span class="line">	<span class="keyword">unsigned</span> <span class="keyword">int</span> readers;</span><br><span class="line">	<span class="keyword">unsigned</span> <span class="keyword">int</span> writers;</span><br><span class="line">    ...</span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">pipe_buffer</span> *<span class="title">bufs</span>;</span></span><br><span class="line">    ...</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+<p>可以發現，在 <code>struct pipe_inode_info</code> 中包含了兩個計數器。根據變數名稱可以推測分別儲存此物件當前<strong>讀者</strong>與<strong>寫者</strong>的數量。</p>
+<p>可以在 <code>get_pipe_inode()</code> 中看到，這兩個計數器如預期般的被初始化為 <code>1</code> 。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">pipe-&gt;readers = pipe-&gt;writers = <span class="number">1</span>;</span><br></pre></td></tr></table></figure>
+<p>另外在該函數中</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">inode-&gt;i_pipe = pipe;</span><br></pre></td></tr></table></figure>
+<p>透過上方程式碼由指標將新配置的 <code>pipe</code> 物件變成 <code>inode</code> 的成員。</p>
+<p>在 <code>get_pipe_inode()</code> 回傳新建立的 <code>inode</code> 物件後</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">f = alloc_file_pseudo(inode, pipe_mnt, <span class="string">&quot;&quot;</span>,</span><br><span class="line">				O_WRONLY | (flags &amp; (O_NONBLOCK | O_DIRECT)),</span><br><span class="line">				&amp;pipefifo_fops);</span><br><span class="line">...</span><br><span class="line">f-&gt;private_data = inode-&gt;i_pipe;</span><br><span class="line">res[<span class="number">0</span>] = alloc_file_clone(f, O_RDONLY | (flags &amp; O_NONBLOCK),</span><br><span class="line">				  &amp;pipefifo_fops);</span><br><span class="line">...</span><br><span class="line">res[<span class="number">0</span>]-&gt;private_data = inode-&gt;i_pipe;</span><br><span class="line">res[<span class="number">1</span>] = f;</span><br></pre></td></tr></table></figure>
+<p>透過以上程式碼將 <code>pipe_inode_info</code> 物件變為兩個 <code>file description</code> 的 <code>private_data</code> 成員。而這兩個 <code>file description</code> 內容大致相同(由於是透過 <code>clone</code> 複製)，差別只在於讀寫權限。由於回傳的 <code>pipefd[1]</code> 為寫端而 <code>pipefd[0]</code> 為讀端，在此可以發現最初開啟的 <code>f</code> 權限為可讀寫，而 <code>f</code> 也被存放至 <code>res[1]</code> 。而之後 <code>clone</code> 的權限則為唯讀，並被存放至 <code>res[0]</code> 。以上的行為皆與 <code>pipe man page</code> 的敘述相符。</p>
+<p>而 <code>res</code> 所指向的開啟的檔案，在回到 <code>do_pipe_flags()</code> 中後，透過</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/* files 即是 res */</span></span><br><span class="line">fd_install(fd[<span class="number">0</span>], files[<span class="number">0</span>]);</span><br><span class="line">fd_install(fd[<span class="number">1</span>], files[<span class="number">1</span>]);</span><br></pre></td></tr></table></figure>
+<p>安插至個別的 <code>file descriptor</code> 上了。所以實際上 <code>pipe</code> 所開啟的兩個 <code>file descriptor</code> 指向的都是有相同內容的兩個 <code>file</code> 物件。如上所述，兩物件差異只在於讀寫權限。而該兩物件的 <code>private data</code> 則都指向同一 <code>pipe_inode_info</code> 物件。</p>
+<p>至此， <code>pipe</code> 的開起與其結構大致告一段落。<br>接下來將探討 <code>pipe</code> 的讀寫機制並修復原有程式的錯誤。</p>
+<p>待續。</p>
+<h2 id="Reference"><a href="#Reference" class="headerlink" title="Reference"></a>Reference</h2><p><a target="_blank" rel="noopener" href="https://kkc.github.io/2020/08/22/file-descriptor/">Linux 的 file descriptor 筆記</a><br><a target="_blank" rel="noopener" href="https://man7.org/linux/man-pages/man2/pipe.2.html">pipe man page</a><br><a target="_blank" rel="noopener" href="https://elixir.bootlin.com/linux/v5.4/source/fs/pipe.c">bootlin pipe.c</a></p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="https://justapig9020.github.io/2020/10/22/linux-pipe-2/" data-id="ckgkxty7d0000wdbe57kk3m4o" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Linux/" rel="tag">Linux</a></li></ul>
+
+    </footer>
+  </div>
+  
+    
+<nav id="article-nav">
+  
+  
+    <a href="/2020/10/20/whoami/" id="article-nav-older" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Older</strong>
+      <div class="article-nav-title">whoami</div>
+    </a>
+  
+</nav>
+
+  
+</article>
+
+</section>
+        
+          <aside id="sidebar">
+  
+    
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">標籤</h3>
+    <div class="widget">
+      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/Linux/" rel="tag">Linux</a></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">標籤雲</h3>
+    <div class="widget tagcloud">
+      <a href="/tags/Linux/" style="font-size: 10px;">Linux</a>
+    </div>
+  </div>
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">彙整</h3>
+    <div class="widget">
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/10/">十月 2020</a></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">最新文章</h3>
+    <div class="widget">
+      <ul>
+        
+          <li>
+            <a href="/2020/10/22/linux-pipe-2/">linux pipe 筆記(二)</a>
+          </li>
+        
+          <li>
+            <a href="/2020/10/20/whoami/">whoami</a>
+          </li>
+        
+          <li>
+            <a href="/2020/10/20/linux-pipe-1/">linux pipe 筆記(一)</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+
+  
+</aside>
+        
+      </div>
+      <footer id="footer">
+  
+  <div class="outer">
+    <div id="footer-info" class="inner">
+      &copy; 2020 justapig9020<br>
+      Powered by <a href="http://hexo.io/" target="_blank">Hexo</a>
+    </div>
+  </div>
+</footer>
+    </div>
+    <nav id="mobile-nav">
+  
+    <a href="/" class="mobile-nav-link">Home</a>
+  
+    <a href="/archives" class="mobile-nav-link">Archives</a>
+  
+</nav>
+    
+
+<script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+
+
+  
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.css">
+
+  
+<script src="/fancybox/jquery.fancybox.pack.js"></script>
+
+
+
+
+<script src="/js/script.js"></script>
+
+
+
+
+  </div>
+</body>
+</html>
